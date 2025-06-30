@@ -2,9 +2,12 @@
   "name": "jishik",
   "version": "1.0.0",
   "description": "A Model Context Protocol (MCP) server for Anki",
-  "main": "index.ts",
-  "module": "index.ts",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
   "type": "module",
+  "bin": {
+    "jishik": "dist/index.js"
+  },
   "keywords": [
     "mcp",
     "model-context-protocol",
