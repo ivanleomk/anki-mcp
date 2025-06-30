@@ -37,6 +37,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.13.2"
+    "@modelcontextprotocol/sdk": "^1.13.2",
+    "yanki-connect": "^3.0.0"
   }
 }
