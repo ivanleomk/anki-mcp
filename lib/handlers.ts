@@ -1,4 +1,5 @@
 import { YankiConnect } from "yanki-connect";
+import { getStatus } from "./helper";
 
 export const listAnkiDecks = async () => {
   const client = new YankiConnect();
@@ -49,24 +50,21 @@ export const getCardsInDeckHandler = async ({
     // Get card info for each ID
     const cardsInfo = await client.card.cardsInfo({ cards: paginatedIds });
 
-    const formattedCards = cardsInfo.map((card) => ({
-      id: card.cardId,
-      front:
-        card.fields?.Front?.value ||
-        card.fields?.Question?.value ||
-        "No front field",
-      back:
-        card.fields?.Back?.value ||
-        card.fields?.Answer?.value ||
-        "No back field",
-      deckName: card.deckName,
-      modelName: card.modelName,
-      due: card.due,
-      interval: card.interval,
-      intervalString: card.interval === 1 ? "1 day" : `every ${card.interval} days`,
-      reviews: card.reps,
-      lapses: card.lapses,
-    }));
+    const formattedCards = cardsInfo.map((card) => {
+      return {
+        id: card.cardId,
+        front:
+          card.fields?.Front?.value ||
+          card.fields?.Question?.value ||
+          "No front field",
+        back:
+          card.fields?.Back?.value ||
+          card.fields?.Answer?.value ||
+          "No back field",
+        state: getStatus(card),
+        deckName: card.deckName,
+      };
+    });
 
     return {
       content: [
@@ -203,34 +201,67 @@ export const searchCardsHandler = async ({
 }: {
   query: string;
   deckName?: string;
-}) => ({
-  content: [
-    {
-      type: "text" as const,
-      text: JSON.stringify(
-        [
+}) => {
+  const client = new YankiConnect();
+
+  try {
+    // Build the search query
+    let searchQuery = query;
+    if (deckName) {
+      searchQuery = `deck:"${deckName}" (${query})`;
+    }
+
+    const cardIds = await client.card.findCards({ query: searchQuery });
+
+    if (cardIds.length === 0) {
+      return {
+        content: [
           {
-            id: 1,
-            front: "こんにちは",
-            back: "Hello",
-            state: "review",
-            deckName: "Japanese",
+            type: "text" as const,
+            text: JSON.stringify([]),
           },
-          {
-            id: 5,
-            front: "Hello world",
-            back: "A common first program",
-            state: "new",
-            deckName: "Computer Science",
-          },
-        ]
-          .filter(
-            (card) =>
-              card.front.toLowerCase().includes(query.toLowerCase()) ||
-              card.back.toLowerCase().includes(query.toLowerCase())
-          )
-          .filter((card) => !deckName || card.deckName === deckName)
-      ),
-    },
-  ],
-});
+        ],
+      };
+    }
+
+    // Get card info for each ID
+    const cardsInfo = await client.card.cardsInfo({ cards: cardIds });
+
+    const formattedCards = cardsInfo.map((card) => {
+      return {
+        id: card.cardId,
+        front:
+          card.fields?.Front?.value ||
+          card.fields?.Question?.value ||
+          "No front field",
+        back:
+          card.fields?.Back?.value ||
+          card.fields?.Answer?.value ||
+          "No back field",
+        state: getStatus(card),
+        deckName: card.deckName,
+      };
+    });
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify(formattedCards),
+        },
+      ],
+    };
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify({
+            error: "Failed to search cards",
+            message: error instanceof Error ? error.message : "Unknown error",
+          }),
+        },
+      ],
+    };
+  }
+};
