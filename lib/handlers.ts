@@ -95,22 +95,107 @@ export const addBasicCardHandler = async ({
   front,
   back,
   deckName,
+  media,
+  tags,
+  note,
+  cardType = "basic",
 }: {
   front: string;
   back: string;
   deckName: string;
-}) => ({
-  content: [
-    {
-      type: "text" as const,
-      text: JSON.stringify({
-        success: true,
-        cardId: Math.floor(Math.random() * 10000),
-        message: `Card added to deck "${deckName}"`,
-      }),
-    },
-  ],
-});
+  media?: string[];
+  tags?: string[];
+  note?: string;
+  cardType?: "basic" | "cloze" | "reverse";
+}) => {
+  const client = new YankiConnect();
+  
+  // Store media files first and get their names
+  const storedMedia: string[] = [];
+  if (media && media.length > 0) {
+    for (const mediaPath of media) {
+      // Extract filename from path (e.g., /xx/yy/name.mp4 -> name.mp4)
+      const filename = mediaPath.split('/').pop() || mediaPath;
+      
+      try {
+        // Read file and convert to base64
+        const fs = await import('fs/promises');
+        const fileBuffer = await fs.readFile(mediaPath);
+        const base64Data = fileBuffer.toString('base64');
+        
+        // Store in Anki's collection
+        await client.media.storeMediaFile({
+          filename,
+          data: base64Data
+        });
+        
+        storedMedia.push(filename);
+      } catch (error) {
+        console.error(`Failed to store media file ${mediaPath}:`, error);
+      }
+    }
+  }
+  
+  // Update front/back to reference stored media files
+  let updatedFront = front;
+  let updatedBack = back;
+  
+  // Replace media references in card content
+  storedMedia.forEach(filename => {
+    const mediaTag = `[sound:${filename}]`;
+    if (filename.match(/\.(mp3|wav|m4a|aac|flac|opus)$/i)) {
+      updatedFront = updatedFront.replace(new RegExp(`\\{${filename}\\}`, 'g'), mediaTag);
+      updatedBack = updatedBack.replace(new RegExp(`\\{${filename}\\}`, 'g'), mediaTag);
+    } else if (filename.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+      const imgTag = `<img src="${filename}">`;
+      updatedFront = updatedFront.replace(new RegExp(`\\{${filename}\\}`, 'g'), imgTag);
+      updatedBack = updatedBack.replace(new RegExp(`\\{${filename}\\}`, 'g'), imgTag);
+    }
+  });
+  
+  // Create the note
+  const noteData = {
+    note: {
+      deckName,
+      modelName: cardType === "basic" ? "Basic" : cardType === "cloze" ? "Cloze" : "Basic (and reversed card)",
+      fields: {
+        Front: updatedFront,
+        Back: updatedBack,
+        ...(note && { Extra: note })
+      },
+      tags: tags || []
+    }
+  };
+  
+  try {
+    const noteId = await client.note.addNote(noteData);
+    
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify({
+            success: true,
+            noteId,
+            storedMedia
+          })
+        }
+      ]
+    };
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify({
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error"
+          })
+        }
+      ]
+    };
+  }
+};
 
 export const searchCardsHandler = async ({
   query,
