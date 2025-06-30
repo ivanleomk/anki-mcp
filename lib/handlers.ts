@@ -21,41 +21,75 @@ export const getCardsInDeckHandler = async ({
   limit = 10,
   offset = 0,
 }: {
-  deckName: string;
+  deckName?: string;
   limit?: number;
   offset?: number;
-}) => ({
-  content: [
-    {
-      type: "text" as const,
-      text: JSON.stringify(
-        [
+}) => {
+  const client = new YankiConnect();
+
+  try {
+    // If no deck name provided, get all cards
+    const query = deckName ? `deck:"${deckName}"` : "";
+    const cardIds = await client.card.findCards({ query });
+
+    // Apply pagination
+    const paginatedIds = cardIds.slice(offset, offset + limit);
+
+    if (paginatedIds.length === 0) {
+      return {
+        content: [
           {
-            id: 1,
-            front: "こんにちは",
-            back: "Hello",
-            state: "review",
-            deckName,
+            type: "text" as const,
+            text: JSON.stringify([]),
           },
-          {
-            id: 2,
-            front: "ありがとう",
-            back: "Thank you",
-            state: "new",
-            deckName,
-          },
-          {
-            id: 3,
-            front: "さようなら",
-            back: "Goodbye",
-            state: "learning",
-            deckName,
-          },
-        ].slice(offset, offset + limit)
-      ),
-    },
-  ],
-});
+        ],
+      };
+    }
+
+    // Get card info for each ID
+    const cardsInfo = await client.card.cardsInfo({ cards: paginatedIds });
+
+    const formattedCards = cardsInfo.map((card) => ({
+      id: card.cardId,
+      front:
+        card.fields?.Front?.value ||
+        card.fields?.Question?.value ||
+        "No front field",
+      back:
+        card.fields?.Back?.value ||
+        card.fields?.Answer?.value ||
+        "No back field",
+      deckName: card.deckName,
+      modelName: card.modelName,
+      due: card.due,
+      interval: card.interval,
+      intervalString: card.interval === 1 ? "1 day" : `every ${card.interval} days`,
+      reviews: card.reps,
+      lapses: card.lapses,
+    }));
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify(formattedCards),
+        },
+      ],
+    };
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify({
+            error: "Failed to get cards from deck",
+            message: error instanceof Error ? error.message : "Unknown error",
+          }),
+        },
+      ],
+    };
+  }
+};
 
 export const addBasicCardHandler = async ({
   front,
