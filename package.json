@@ -6,13 +6,15 @@
     "inspector": "npx @modelcontextprotocol/inspector bun run index.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "@modelcontextprotocol/inspector": "^1.13.2"
+    "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.13.2"
+    "@modelcontextprotocol/sdk": "^1.13.2",
+    "yanki-connect": "^3.0.0",
+    "zod": "^3.25.67",
+    "zod-to-json-schema": "^3.24.6"
   }
 }
