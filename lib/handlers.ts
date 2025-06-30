@@ -61,10 +61,20 @@ export const addBasicCardHandler = async ({
   front,
   back,
   deckName,
+  audioFront,
+  audioBack,
+  tags,
+  note,
+  cardType = "basic",
 }: {
   front: string;
   back: string;
   deckName: string;
+  audioFront?: string;
+  audioBack?: string;
+  tags?: string[];
+  note?: string;
+  cardType?: "basic" | "cloze" | "reverse";
 }) => ({
   content: [
     {
@@ -72,7 +82,17 @@ export const addBasicCardHandler = async ({
       text: JSON.stringify({
         success: true,
         cardId: Math.floor(Math.random() * 10000),
-        message: `Card added to deck "${deckName}"`,
+        message: `${cardType} card added to deck "${deckName}"`,
+        card: {
+          front,
+          back,
+          deckName,
+          audioFront,
+          audioBack,
+          tags: tags || [],
+          note,
+          cardType,
+        },
       }),
     },
   ],
