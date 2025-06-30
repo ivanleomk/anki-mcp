@@ -1,9 +1,6 @@
-import {
-  McpServer,
-  ResourceTemplate,
-} from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
+import { tools } from "./lib/tools.js";
 
 // Create an MCP server
 const server = new McpServer({
@@ -11,18 +8,10 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
-// Add an addition tool
-server.registerTool(
-  "add",
-  {
-    title: "Addition Tool",
-    description: "Add two numbers",
-    inputSchema: { a: z.number(), b: z.number() },
-  },
-  async ({ a, b }) => ({
-    content: [{ type: "text", text: String(a + b) }],
-  })
-);
+tools.forEach((tool) => {
+  server.registerTool(tool.name, tool.config, tool.handler);
+});
+// Register tools
 
 // Start receiving messages on stdin and sending messages on stdout
 const transport = new StdioServerTransport();

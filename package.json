@@ -5,19 +5,25 @@
   "main": "index.ts",
   "module": "index.ts",
   "type": "module",
-  "keywords": ["mcp", "model-context-protocol", "anki", "server"],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "anki",
+    "server"
+  ],
   "author": "",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YOUR_USERNAME/anki-mcp.git"
+    "url": "git+https://github.com/ivanleomk/jishik.git"
   },
   "bugs": {
-    "url": "https://github.com/YOUR_USERNAME/anki-mcp/issues"
+    "url": "https://github.com/ivanleomk/jishik/issues"
   },
-  "homepage": "https://github.com/YOUR_USERNAME/anki-mcp#readme",
+  "homepage": "https://github.com/ivanleomk/jishik#readme",
   "scripts": {
-    "inspector": "npx @modelcontextprotocol/inspector bun run index.ts"
+    "build": "bun build index.ts --outdir dist --target node",
+    "inspector": "npx @modelcontextprotocol/inspector node dist/index.js"
   },
   "devDependencies": {
     "@types/bun": "latest",
