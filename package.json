@@ -1,5 +1,5 @@
 {
-  "name": "anki-mcp",
+  "name": "jishik",
   "version": "1.0.0",
   "description": "A Model Context Protocol (MCP) server for Anki",
   "main": "index.ts",
