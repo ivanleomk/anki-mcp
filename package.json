@@ -6,7 +6,8 @@
     "inspector": "npx @modelcontextprotocol/inspector bun run index.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@modelcontextprotocol/inspector": "^0.15.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
