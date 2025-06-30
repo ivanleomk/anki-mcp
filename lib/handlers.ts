@@ -1,7 +1,3 @@
-export const addHandler = async ({ a, b }: { a: number; b: number }) => ({
-  content: [{ type: "text" as const, text: String(a + b) }],
-});
-
 export const getDeckNamesHandler = async () => ({
   content: [{ type: "text" as const, text: JSON.stringify([
     { name: "Japanese", cardCount: 450, newCards: 12, reviewCards: 38 },
