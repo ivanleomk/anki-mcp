@@ -1,7 +1,21 @@
 {
-  "name": "anki-mcp",
+  "name": "jishik",
+  "version": "1.0.0",
+  "description": "A Model Context Protocol (MCP) server for Anki",
+  "main": "index.ts",
   "module": "index.ts",
   "type": "module",
+  "keywords": ["mcp", "model-context-protocol", "anki", "server"],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_USERNAME/anki-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/anki-mcp/issues"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/anki-mcp#readme",
   "scripts": {
     "inspector": "npx @modelcontextprotocol/inspector bun run index.ts"
   },
