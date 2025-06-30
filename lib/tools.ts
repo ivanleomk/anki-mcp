@@ -1,14 +1,61 @@
 import { z } from "zod";
-import { addHandler } from "./handlers";
+import { 
+  addHandler, 
+  getDeckNamesHandler, 
+  getCardsInDeckHandler, 
+  addBasicCardHandler, 
+  searchCardsHandler 
+} from "./handlers";
 
-export const addTool = {
-  name: "add",
+export const getDeckNamesTool = {
+  name: "getDeckNames",
   config: {
-    title: "Addition Tool",
-    description: "Add two numbers",
-    inputSchema: { a: z.number(), b: z.number() },
+    title: "Get Deck Names",
+    description: "List all available Anki decks with basic stats",
+    inputSchema: {},
   },
-  handler: addHandler,
+  handler: getDeckNamesHandler,
 };
 
-export const tools = [addTool];
+export const getCardsInDeckTool = {
+  name: "getCardsInDeck", 
+  config: {
+    title: "Get Cards in Deck",
+    description: "Get cards from a specific deck with pagination support",
+    inputSchema: { 
+      deckName: z.string(),
+      limit: z.number().optional().default(10),
+      offset: z.number().optional().default(0),
+    },
+  },
+  handler: getCardsInDeckHandler,
+};
+
+export const addBasicCardTool = {
+  name: "addBasicCard",
+  config: {
+    title: "Add Basic Card", 
+    description: "Create new flashcards with front/back content",
+    inputSchema: {
+      front: z.string(),
+      back: z.string(), 
+      deckName: z.string(),
+    },
+  },
+  handler: addBasicCardHandler,
+};
+
+export const searchCardsTool = {
+  name: "searchCards",
+  config: {
+    title: "Search Cards",
+    description: "Search for cards by content in front or back fields",
+    inputSchema: {
+      query: z.string(),
+      deckName: z.string().optional(),
+    },
+  },
+  handler: searchCardsHandler,
+};
+
+export const tools = [getDeckNamesTool, getCardsInDeckTool, addBasicCardTool, searchCardsTool];
