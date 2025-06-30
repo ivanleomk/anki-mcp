@@ -23,7 +23,8 @@
   "homepage": "https://github.com/ivanleomk/jishik#readme",
   "scripts": {
     "build": "bun build index.ts --outdir dist --target node",
-    "inspector": "npx @modelcontextprotocol/inspector node dist/index.js"
+    "inspector": "npx @modelcontextprotocol/inspector node dist/index.js",
+    "preview": "bun run build && npx @modelcontextprotocol/inspector node dist/index.js"
   },
   "devDependencies": {
     "@types/bun": "latest",
