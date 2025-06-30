@@ -1,6 +1,6 @@
 {
   "name": "jishik",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Model Context Protocol (MCP) server for Anki",
   "main": "dist/index.js",
   "module": "dist/index.js",
