@@ -22,7 +22,7 @@ export const getCardsInDeckTool = {
     title: "Get Cards in Deck",
     description: "Get cards from a specific deck with pagination support",
     inputSchema: { 
-      deckName: z.string(),
+      deckName: z.string().optional(),
       limit: z.number().optional().default(10),
       offset: z.number().optional().default(0),
     },
@@ -30,10 +30,10 @@ export const getCardsInDeckTool = {
   handler: getCardsInDeckHandler,
 };
 
-export const addBasicCardTool = {
-  name: "addBasicCard",
+export const addCardTool = {
+  name: "addCard",
   config: {
-    title: "Add Basic Card", 
+    title: "Add Card", 
     description: "Create new flashcards with front/back content",
     inputSchema: {
       front: z.string(),
@@ -57,4 +57,4 @@ export const searchCardsTool = {
   handler: searchCardsHandler,
 };
 
-export const tools = [getDeckNamesTool, getCardsInDeckTool, addBasicCardTool, searchCardsTool];
+export const tools = [getDeckNamesTool, getCardsInDeckTool, addCardTool, searchCardsTool];
