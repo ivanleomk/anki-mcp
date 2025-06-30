@@ -61,8 +61,7 @@ export const addBasicCardHandler = async ({
   front,
   back,
   deckName,
-  audioFront,
-  audioBack,
+  media,
   tags,
   note,
   cardType = "basic",
@@ -70,8 +69,7 @@ export const addBasicCardHandler = async ({
   front: string;
   back: string;
   deckName: string;
-  audioFront?: string;
-  audioBack?: string;
+  media?: string[];
   tags?: string[];
   note?: string;
   cardType?: "basic" | "cloze" | "reverse";
@@ -87,8 +85,7 @@ export const addBasicCardHandler = async ({
           front,
           back,
           deckName,
-          audioFront,
-          audioBack,
+          media: media || [],
           tags: tags || [],
           note,
           cardType,

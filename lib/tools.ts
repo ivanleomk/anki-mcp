@@ -21,17 +21,16 @@ export const getCardsInDeckTool = {
 };
 
 export const addCardTool = {
-name: "addCard",
-config: {
-title: "Add Card", 
-description: "Create new flashcards with front/back content, optional audio files, tags, and notes",
-inputSchema: {
-front: z.string(),
-back: z.string(), 
-deckName: z.string(),
-  audioFront: z.string().optional().describe("Path or URL to audio file for front of card"),
-    audioBack: z.string().optional().describe("Path or URL to audio file for back of card"),
-    tags: z.array(z.string()).optional().describe("Tags to associate with the card"),
+  name: "addCard",
+  config: {
+    title: "Add Card", 
+    description: "Create new flashcards with front/back content and optional media files",
+    inputSchema: {
+      front: z.string(),
+      back: z.string(), 
+      deckName: z.string(),
+      media: z.array(z.string()).optional().describe("Array of media file paths/URLs to add to Anki collection"),
+      tags: z.array(z.string()).optional().describe("Tags to associate with the card"),
       note: z.string().optional().describe("Additional notes for the card"),
       cardType: z.enum(["basic", "cloze", "reverse"]).optional().default("basic").describe("Type of card to create"),
     },
