@@ -210,26 +210,49 @@ export const addBulkCardsHandler = async ({
 }) => {
   const client = new YankiConnect();
   
-  // Store media files first and get their names
+  // First, validate all media files exist
+  if (media && media.length > 0) {
+    const fs = await import('fs/promises');
+    
+    // Check all files and collect non-existent ones
+    const fileChecks = await Promise.allSettled(
+      media.map(async (mediaPath) => {
+        try {
+          await fs.access(mediaPath);
+          return { path: mediaPath, exists: true };
+        } catch {
+          return { path: mediaPath, exists: false };
+        }
+      })
+    );
+    
+    const nonExistentFiles = fileChecks
+      .map(result => result.status === 'fulfilled' ? result.value : null)
+      .filter(result => result && !result.exists)
+      .map(result => result!.path);
+    
+    if (nonExistentFiles.length > 0) {
+      throw new Error(`Media files not found or not accessible: ${nonExistentFiles.join(', ')}`);
+    }
+  }
+  
+  // Store media files in single pass after validation
   const storedMedia: string[] = [];
   if (media && media.length > 0) {
+    const fs = await import('fs/promises');
+    
     for (const mediaPath of media) {
       const filename = mediaPath.split('/').pop() || mediaPath;
       
-      try {
-        const fs = await import('fs/promises');
-        const fileBuffer = await fs.readFile(mediaPath);
-        const base64Data = fileBuffer.toString('base64');
-        
-        await client.media.storeMediaFile({
-          filename,
-          data: base64Data
-        });
-        
-        storedMedia.push(filename);
-      } catch (error) {
-        console.error(`Failed to store media file ${mediaPath}:`, error);
-      }
+      const fileBuffer = await fs.readFile(mediaPath);
+      const base64Data = fileBuffer.toString('base64');
+      
+      await client.media.storeMediaFile({
+        filename,
+        data: base64Data
+      });
+      
+      storedMedia.push(filename);
     }
   }
   
