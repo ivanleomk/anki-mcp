@@ -3,6 +3,7 @@ import {
   listAnkiDecks,
   getCardsInDeckHandler,
   addBasicCardHandler,
+  addBulkCardsHandler,
   searchCardsHandler,
 } from "./handlers";
 
@@ -61,9 +62,33 @@ export const listAnkiDecksTool = {
   handler: listAnkiDecks,
 };
 
+export const addBulkCardsTool = {
+  name: "addBulkCards",
+  config: {
+    title: "Add Bulk Cards",
+    description: "Create multiple flashcards in one operation with front/back content and optional media files. Media files are automatically stored in Anki's collection and can be referenced in card content using {filename} syntax.",
+    inputSchema: {
+      cards: z.array(z.object({
+        front: z.string().describe("Front side content of the flashcard. Can include HTML, text, and media references like {audio.mp3} or {image.jpg}"),
+        back: z.string().describe("Back side content of the flashcard. Can include HTML, text, and media references like {audio.mp3} or {image.jpg}"),
+        deckName: z.string().describe("Name of the Anki deck where the card should be added. Must be an existing deck name."),
+        media: z.array(z.string()).optional().describe("Array of file paths to media files (images, audio, video) that will be stored in Anki's collection. Files can then be referenced in front/back content using {filename} syntax (e.g., {recording.mp3})"),
+        tags: z.array(z.string()).optional().describe("Tags to associate with the card for organization and filtering"),
+        note: z.string().optional().describe("Additional notes or context information for the card"),
+        cardType: z.enum(["basic", "cloze", "reverse"]).optional().default("basic").describe("Type of card template: 'basic' for front->back, 'cloze' for fill-in-the-blank, 'reverse' for bidirectional cards"),
+      })).describe("Array of card objects to create"),
+      options: z.object({
+        allowDuplicates: z.boolean().optional().describe("Whether to allow duplicate cards to be created")
+      }).optional().describe("Additional options for bulk card creation")
+    },
+  },
+  handler: addBulkCardsHandler,
+};
+
 export const tools = [
   getCardsInDeckTool,
   addCardTool,
+  addBulkCardsTool,
   searchCardsTool,
   listAnkiDecksTool,
 ];

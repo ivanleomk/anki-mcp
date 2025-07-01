@@ -195,6 +195,134 @@ export const addBasicCardHandler = async ({
   }
 };
 
+export const addBulkCardsHandler = async ({
+  cards,
+  options,
+}: {
+  cards: Array<{
+    front: string;
+    back: string;
+    deckName: string;
+    media?: string[];
+    tags?: string[];
+    note?: string;
+    cardType?: "basic" | "cloze" | "reverse";
+  }>;
+  options?: {
+    allowDuplicates?: boolean;
+  };
+}) => {
+  const client = new YankiConnect();
+  
+  const results: Array<{
+    success: boolean;
+    noteId?: number;
+    error?: string;
+    cardIndex: number;
+    storedMedia?: string[];
+  }> = [];
+
+  let successful = 0;
+  let failed = 0;
+
+  // Process each card
+  for (let i = 0; i < cards.length; i++) {
+    const card = cards[i];
+    
+    try {
+      // Store media files first and get their names
+      const storedMedia: string[] = [];
+      if (card.media && card.media.length > 0) {
+        for (const mediaPath of card.media) {
+          const filename = mediaPath.split('/').pop() || mediaPath;
+          
+          try {
+            const fs = await import('fs/promises');
+            const fileBuffer = await fs.readFile(mediaPath);
+            const base64Data = fileBuffer.toString('base64');
+            
+            await client.media.storeMediaFile({
+              filename,
+              data: base64Data
+            });
+            
+            storedMedia.push(filename);
+          } catch (error) {
+            console.error(`Failed to store media file ${mediaPath}:`, error);
+          }
+        }
+      }
+      
+      // Update front/back to reference stored media files
+      let updatedFront = card.front;
+      let updatedBack = card.back;
+      
+      storedMedia.forEach(filename => {
+        const mediaTag = `[sound:${filename}]`;
+        if (filename.match(/\.(mp3|wav|m4a|aac|flac|opus)$/i)) {
+          updatedFront = updatedFront.replace(new RegExp(`\\{${filename}\\}`, 'g'), mediaTag);
+          updatedBack = updatedBack.replace(new RegExp(`\\{${filename}\\}`, 'g'), mediaTag);
+        } else if (filename.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+          const imgTag = `<img src="${filename}">`;
+          updatedFront = updatedFront.replace(new RegExp(`\\{${filename}\\}`, 'g'), imgTag);
+          updatedBack = updatedBack.replace(new RegExp(`\\{${filename}\\}`, 'g'), imgTag);
+        }
+      });
+      
+      // Create the note data
+      const noteData = {
+        note: {
+          deckName: card.deckName,
+          modelName: card.cardType === "basic" ? "Basic" : card.cardType === "cloze" ? "Cloze" : "Basic (and reversed card)",
+          fields: {
+            Front: updatedFront,
+            Back: updatedBack,
+            ...(card.note && { Extra: card.note })
+          },
+          tags: card.tags || []
+        }
+      };
+      
+      const noteId = await client.note.addNote(noteData);
+      
+      results.push({
+        success: true,
+        noteId: noteId || undefined,
+        cardIndex: i,
+        storedMedia
+      });
+      
+      successful++;
+      
+    } catch (error) {
+      results.push({
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+        cardIndex: i
+      });
+      
+      failed++;
+    }
+  }
+
+  return {
+    content: [
+      {
+        type: "text" as const,
+        text: JSON.stringify({
+          success: failed === 0,
+          results,
+          summary: {
+            total: cards.length,
+            successful,
+            failed
+          }
+        })
+      }
+    ]
+  };
+};
+
 export const searchCardsHandler = async ({
   query,
   deckName,
