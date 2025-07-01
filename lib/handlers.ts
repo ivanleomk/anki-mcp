@@ -195,6 +195,151 @@ export const addBasicCardHandler = async ({
   }
 };
 
+export const addBulkCardsHandler = async ({
+  cards,
+  deckName,
+  media,
+}: {
+  cards: Array<{
+    front: string;
+    back: string;
+    tags?: string[];
+  }>;
+  deckName: string;
+  media?: string[];
+}) => {
+  const client = new YankiConnect();
+  
+  // First, validate all media files exist
+  if (media && media.length > 0) {
+    const fs = await import('fs/promises');
+    
+    // Check all files and collect non-existent ones
+    const fileChecks = await Promise.allSettled(
+      media.map(async (mediaPath) => {
+        try {
+          await fs.access(mediaPath);
+          return { path: mediaPath, exists: true };
+        } catch {
+          return { path: mediaPath, exists: false };
+        }
+      })
+    );
+    
+    const nonExistentFiles = fileChecks
+      .map(result => result.status === 'fulfilled' ? result.value : null)
+      .filter(result => result && !result.exists)
+      .map(result => result!.path);
+    
+    if (nonExistentFiles.length > 0) {
+      throw new Error(`Media files not found or not accessible: ${nonExistentFiles.join(', ')}`);
+    }
+  }
+  
+  // Store media files in single pass after validation
+  const storedMedia: string[] = [];
+  if (media && media.length > 0) {
+    const fs = await import('fs/promises');
+    
+    for (const mediaPath of media) {
+      const filename = mediaPath.split('/').pop() || mediaPath;
+      
+      const fileBuffer = await fs.readFile(mediaPath);
+      const base64Data = fileBuffer.toString('base64');
+      
+      await client.media.storeMediaFile({
+        filename,
+        data: base64Data
+      });
+      
+      storedMedia.push(filename);
+    }
+  }
+  
+  const results: Array<{
+    success: boolean;
+    noteId?: number;
+    error?: string;
+    cardIndex: number;
+  }> = [];
+
+  let successful = 0;
+  let failed = 0;
+
+  // Process each card
+  for (let i = 0; i < cards.length; i++) {
+    const card = cards[i];
+    
+    try {
+      // Update front/back to reference stored media files
+      let updatedFront = card.front;
+      let updatedBack = card.back;
+      
+      storedMedia.forEach(filename => {
+        const mediaTag = `[sound:${filename}]`;
+        if (filename.match(/\.(mp3|wav|m4a|aac|flac|opus)$/i)) {
+          updatedFront = updatedFront.replace(new RegExp(`\\{${filename}\\}`, 'g'), mediaTag);
+          updatedBack = updatedBack.replace(new RegExp(`\\{${filename}\\}`, 'g'), mediaTag);
+        } else if (filename.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+          const imgTag = `<img src="${filename}">`;
+          updatedFront = updatedFront.replace(new RegExp(`\\{${filename}\\}`, 'g'), imgTag);
+          updatedBack = updatedBack.replace(new RegExp(`\\{${filename}\\}`, 'g'), imgTag);
+        }
+      });
+      
+      // Create the note data (always basic card type)
+      const noteData = {
+        note: {
+          deckName,
+          modelName: "Basic",
+          fields: {
+            Front: updatedFront,
+            Back: updatedBack,
+          },
+          tags: card.tags || []
+        }
+      };
+      
+      const noteId = await client.note.addNote(noteData);
+      
+      results.push({
+        success: true,
+        noteId: noteId || undefined,
+        cardIndex: i
+      });
+      
+      successful++;
+      
+    } catch (error) {
+      results.push({
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+        cardIndex: i
+      });
+      
+      failed++;
+    }
+  }
+
+  return {
+    content: [
+      {
+        type: "text" as const,
+        text: JSON.stringify({
+          success: failed === 0,
+          results,
+          summary: {
+            total: cards.length,
+            successful,
+            failed
+          },
+          storedMedia
+        })
+      }
+    ]
+  };
+};
+
 export const searchCardsHandler = async ({
   query,
   deckName,

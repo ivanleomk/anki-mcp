@@ -3,6 +3,7 @@ import {
   listAnkiDecks,
   getCardsInDeckHandler,
   addBasicCardHandler,
+  addBulkCardsHandler,
   searchCardsHandler,
 } from "./handlers";
 
@@ -61,9 +62,28 @@ export const listAnkiDecksTool = {
   handler: listAnkiDecks,
 };
 
+export const addBulkCardsTool = {
+  name: "addBulkCards",
+  config: {
+    title: "Add Bulk Cards",
+    description: "Create multiple basic flashcards in one operation with front/back content and optional media files. All cards will be added to the same deck. Media files are automatically stored in Anki's collection and can be referenced in card content using {filename} syntax.",
+    inputSchema: {
+      cards: z.array(z.object({
+        front: z.string().describe("Front side content of the flashcard. Can include HTML, text, and media references like {audio.mp3} or {image.jpg}"),
+        back: z.string().describe("Back side content of the flashcard. Can include HTML, text, and media references like {audio.mp3} or {image.jpg}"),
+        tags: z.array(z.string()).optional().describe("Tags to associate with the card for organization and filtering"),
+      })).describe("Array of card objects to create"),
+      deckName: z.string().describe("Name of the Anki deck where all cards should be added. Must be an existing deck name."),
+      media: z.array(z.string()).optional().describe("Array of file paths to media files (images, audio, video) that will be stored in Anki's collection. Files can then be referenced in any card's front/back content using {filename} syntax (e.g., {recording.mp3})"),
+    },
+  },
+  handler: addBulkCardsHandler,
+};
+
 export const tools = [
   getCardsInDeckTool,
   addCardTool,
+  addBulkCardsTool,
   searchCardsTool,
   listAnkiDecksTool,
 ];
