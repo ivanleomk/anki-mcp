@@ -197,29 +197,47 @@ export const addBasicCardHandler = async ({
 
 export const addBulkCardsHandler = async ({
   cards,
-  options,
+  deckName,
+  media,
 }: {
   cards: Array<{
     front: string;
     back: string;
-    deckName: string;
-    media?: string[];
     tags?: string[];
-    note?: string;
-    cardType?: "basic" | "cloze" | "reverse";
   }>;
-  options?: {
-    allowDuplicates?: boolean;
-  };
+  deckName: string;
+  media?: string[];
 }) => {
   const client = new YankiConnect();
+  
+  // Store media files first and get their names
+  const storedMedia: string[] = [];
+  if (media && media.length > 0) {
+    for (const mediaPath of media) {
+      const filename = mediaPath.split('/').pop() || mediaPath;
+      
+      try {
+        const fs = await import('fs/promises');
+        const fileBuffer = await fs.readFile(mediaPath);
+        const base64Data = fileBuffer.toString('base64');
+        
+        await client.media.storeMediaFile({
+          filename,
+          data: base64Data
+        });
+        
+        storedMedia.push(filename);
+      } catch (error) {
+        console.error(`Failed to store media file ${mediaPath}:`, error);
+      }
+    }
+  }
   
   const results: Array<{
     success: boolean;
     noteId?: number;
     error?: string;
     cardIndex: number;
-    storedMedia?: string[];
   }> = [];
 
   let successful = 0;
@@ -230,29 +248,6 @@ export const addBulkCardsHandler = async ({
     const card = cards[i];
     
     try {
-      // Store media files first and get their names
-      const storedMedia: string[] = [];
-      if (card.media && card.media.length > 0) {
-        for (const mediaPath of card.media) {
-          const filename = mediaPath.split('/').pop() || mediaPath;
-          
-          try {
-            const fs = await import('fs/promises');
-            const fileBuffer = await fs.readFile(mediaPath);
-            const base64Data = fileBuffer.toString('base64');
-            
-            await client.media.storeMediaFile({
-              filename,
-              data: base64Data
-            });
-            
-            storedMedia.push(filename);
-          } catch (error) {
-            console.error(`Failed to store media file ${mediaPath}:`, error);
-          }
-        }
-      }
-      
       // Update front/back to reference stored media files
       let updatedFront = card.front;
       let updatedBack = card.back;
@@ -269,15 +264,14 @@ export const addBulkCardsHandler = async ({
         }
       });
       
-      // Create the note data
+      // Create the note data (always basic card type)
       const noteData = {
         note: {
-          deckName: card.deckName,
-          modelName: card.cardType === "basic" ? "Basic" : card.cardType === "cloze" ? "Cloze" : "Basic (and reversed card)",
+          deckName,
+          modelName: "Basic",
           fields: {
             Front: updatedFront,
             Back: updatedBack,
-            ...(card.note && { Extra: card.note })
           },
           tags: card.tags || []
         }
@@ -288,8 +282,7 @@ export const addBulkCardsHandler = async ({
       results.push({
         success: true,
         noteId: noteId || undefined,
-        cardIndex: i,
-        storedMedia
+        cardIndex: i
       });
       
       successful++;
@@ -316,7 +309,8 @@ export const addBulkCardsHandler = async ({
             total: cards.length,
             successful,
             failed
-          }
+          },
+          storedMedia
         })
       }
     ]
